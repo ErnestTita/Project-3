@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eks-app.fullname" . }}-index-html
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "eks-app.labels" . | nindent 4 }}
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>EKS Application</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 40px;
+          text-align: center;
+        }
+        h1 {
+          color: #333;
+        }
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+        }
+        .status {
+          margin-top: 20px;
+          padding: 10px;
+          background-color: #f8f8f8;
+          border-radius: 5px;
+        }
+        .success {
+          color: green;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>EKS Application Frontend</h1>
+        <p>This is a simple frontend for the EKS application.</p>
+        <div class="status">
+          <h2>Status</h2>
+          <p class="success">✅ Frontend is running</p>
+          <p>Backend URL: <code>{{ include "eks-app.fullname" . }}-backend:{{ .Values.backend.service.port }}</code></p>
+        </div>
+      </div>
+    </body>
+    </html>

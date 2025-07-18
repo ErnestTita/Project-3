@@ -1,0 +1,115 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+frontend:
+  enabled: true
+  image:
+    repository: ernesttita/frontend
+    tag: "v1"
+    pullPolicy: Always
+  replicaCount: 2
+  securityContext:
+    fsGroup: 101
+    runAsUser: 101
+    runAsGroup: 101
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+      service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=true"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+backend:
+  enabled: true
+  image:
+    repository: ernesttita/backend
+    tag: "v1"
+    pullPolicy: Always
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    NODE_ENV: production
+    PORT: "3000"
+    POSTGRES_HOST: eks-app-postgresql
+    POSTGRES_PORT: "5432"
+
+postgresql:
+  enabled: true
+  persistence:
+    size: 1Gi
+    storageClass: gp3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+externalSecrets:
+  enabled: true
+  secretStore:
+    name: aws-secrets-manager
+    kind: SecretStore
+  secrets:
+    database:
+      name: eks-app-db-secret
+      secretManagerName: eks-app/database
+      keys:
+        - key: POSTGRES_USER
+          name: username
+        - key: POSTGRES_PASSWORD
+          name: password
+        - key: POSTGRES_PASSWORD
+          name: postgres-password
+        - key: POSTGRES_PASSWORD
+          name: replication-password
+        - key: POSTGRES_DB
+          name: database
+    application:
+      name: eks-app-secret
+      secretManagerName: eks-app/application
+      keys:
+        - key: JWT_SECRET
+          name: jwt-secret
+        - key: API_KEY
+          name: api-key
+        - key: NODE_ENV
+          name: node-env
+
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::852998998348:role/eks-external-secrets-role"
+  name: eks-app-sa
